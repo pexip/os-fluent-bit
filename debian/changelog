@@ -1,0 +1,5 @@
+fluent-bit (5.0.9-1) pexip-trixie; urgency=medium
+
+  * Initial release.
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Mon, 20 Jul 2026 10:01:55 +0100

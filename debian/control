@@ -1,0 +1,40 @@
+Source: fluent-bit
+Section: utils
+Priority: optional
+Maintainer: Mark Hymers <mark.hymers@pexip.com>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ bison,
+ cmake,
+ libbacktrace-dev,
+ libc-ares-dev,
+ libedit-dev,
+ libevent-dev,
+ libjansson-dev,
+ libjemalloc-dev,
+ libjsmn-dev,
+ libmsgpack-c-dev,
+ libnghttp2-dev,
+ libnghttp3-dev,
+ libngtcp2-dev,
+ libsqlite3-dev,
+ libssl-dev,
+ libsystemd-dev,
+ libxml2-dev,
+ libyaml-dev,
+ libzstd-dev,
+ pkgconf,
+ zlib1g-dev
+Standards-Version: 4.7.2
+Homepage: https://github.com/fluent/fluent-bit
+
+Package: fluent-bit
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: Lightweight and high-performance Telemetry Agen
+ Fluent Bit is a lightweight and high-performance Telemetry Agent designed to
+ collect, process, and forward Logs, Metrics, and Traces from any source to any
+ destination.

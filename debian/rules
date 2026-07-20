@@ -1,0 +1,109 @@
+#!/usr/bin/make -f
+
+# See debhelper(7) (uncomment to enable).
+# Output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+
+# See FEATURE AREAS in dpkg-buildflags(1).
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# See ENVIRONMENT in dpkg-buildflags(1).
+# Package maintainers to append CFLAGS.
+#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+# Package maintainers to append LDFLAGS.
+#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+
+%:
+	dh $@
+
+
+# dh_make generated override targets.
+# This is an example for Cmake (see <https://bugs.debian.org/641051>).
+#override_dh_auto_configure:
+#	dh_auto_configure -- \
+#	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
+override_dh_auto_configure:
+	dh_auto_configure -- \
+	  -DBUILD_EXAMPLES=OFF \
+      -DBUILD_FUZZERS=OFF \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      -DENABLE_DOC=OFF \
+      -DENABLE_EXAMPLES=OFF \
+      -DENABLE_FAILMALLOC=OFF \
+      -DENABLE_HPACK_TOOLS=OFF \
+      -DENABLE_HTTP3=OFF \
+      -DENABLE_PROGRAMS=OFF \
+      -DFLB_AWS=OFF \
+      -DFLB_AWS_ERROR_REPORTER=OFF \
+      -DFLB_CUSTOM_CALYPTIA=OFF \
+      -DFLB_EXAMPLES=OFF \
+      -DFLB_FILTER_AWS=OFF \
+      -DFLB_FILTER_ECS=OFF \
+      -DFLB_FILTER_EXPECT=OFF \
+      -DFLB_FILTER_GEOIP2=OFF \
+      -DFLB_FILTER_KUBERNETES=OFF \
+      -DFLB_FILTER_LUA=OFF \
+      -DFLB_HTTP_SERVER=ON \
+      -DFLB_IN_CALYPTIA_FLEET=OFF \
+      -DFLB_IN_ELASTICSEARCH=OFF \
+      -DFLB_IN_KAFKA=OFF \
+      -DFLB_IN_KUBERNETES_EVENTS=OFF \
+      -DFLB_IN_MQTT=OFF \
+      -DFLB_IN_SPLUNK=OFF \
+      -DFLB_IN_WINDOWS_EXPORTER_METRIC=OFF \
+      -DFLB_IN_WINEVTLOG=OFF \
+      -DFLB_IN_WINLOG=OFF \
+      -DFLB_IN_WINSTAT=OFF \
+      -DFLB_JEMALLOC=OFF \
+      -DFLB_KAFKA=OFF \
+      -DFLB_LUAJIT=OFF \
+      -DFLB_OUT_AZURE=OFF \
+      -DFLB_OUT_AZURE_BLOB=OFF \
+      -DFLB_OUT_AZURE_KUSTO=OFF \
+      -DFLB_OUT_AZURE_LOGS_INGESTION=OFF \
+      -DFLB_OUT_BIGQUERY=OFF \
+      -DFLB_OUT_CALYPTIA=OFF \
+      -DFLB_OUT_CHRONICLE=OFF \
+      -DFLB_OUT_CLOUDWATCH_LOGS=OFF \
+      -DFLB_OUT_DATADOG=OFF \
+      -DFLB_OUT_ES=OFF \
+      -DFLB_OUT_GELF=OFF \
+      -DFLB_OUT_INFLUXDB=OFF \
+      -DFLB_OUT_KAFKA=OFF \
+      -DFLB_OUT_KAFKA_REST=OFF \
+      -DFLB_OUT_KINESIS_FIREHOSE=OFF \
+      -DFLB_OUT_KINESIS_STREAMS=OFF \
+      -DFLB_OUT_LOGDNA=OFF \
+      -DFLB_OUT_NATS=OFF \
+      -DFLB_OUT_ORACLE_LOG_ANALYTICS=OFF \
+      -DFLB_OUT_PGSQL=OFF \
+      -DFLB_OUT_S3=OFF \
+      -DFLB_OUT_SKYWALKING=OFF \
+      -DFLB_OUT_SPLUNK=OFF \
+      -DFLB_OUT_STACKDRIVER=OFF \
+      -DFLB_OUT_VIVO_EXPORTER=OFF \
+      -DFLB_OUT_WEBSOCKET=OFF \
+      -DFLB_RIPSER=OFF \
+      -DFLB_SIGNV4=OFF \
+      -DFLB_WASM=OFF \
+      -DFLB_WASM_STACK_PROTECT=OFF \
+      -DFLB_YYJSON=OFF \
+      -DFLB_ZIG=OFF \
+      -DFLB_PREFER_SYSTEM_LIB_MSGPACK=ON \
+      -DFLB_PREFER_SYSTEM_LIBS=ON \
+      -DFLB_PREFER_SYSTEM_LIB_BACKTRACE=ON \
+      -DFLB_PREFER_SYSTEM_LIB_CARES=ON \
+      -DFLB_PREFER_SYSTEM_LIB_JEMALLOC=ON \
+      -DFLB_PREFER_SYSTEM_LIB_KAFKA=ON \
+      -DFLB_PREFER_SYSTEM_LIB_LUAJIT=ON \
+      -DFLB_PREFER_SYSTEM_LIB_MSGPACK=ON \
+      -DFLB_PREFER_SYSTEM_LIB_NGHTTP2=ON \
+      -DFLB_PREFER_SYSTEM_LIB_SQLITE=ON \
+      -DFLB_PREFER_SYSTEM_LIB_ZSTD=ON
+
+override_dh_auto_install:
+	dh_auto_install --destdir=$(CURDIR)/debian/tmp
+
+	rm -f debian/tmp/etc/fluent-bit/fluent-bit.conf

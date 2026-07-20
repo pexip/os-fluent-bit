@@ -1,0 +1,4 @@
+usr/bin/fluent-bit
+lib/systemd/system/fluent-bit.service
+etc/fluent-bit/*
+debian/fluent-bit-config.path lib/systemd/system/

@@ -1,0 +1,9 @@
+[Unit]
+Description=Fluent bit config file (path monitor: fluent-bit.yaml)
+PartOf=fluent-bit.service
+
+[Install]
+WantedBy=multi-user.target
+
+[Path]
+PathChanged=/etc/fluent-bit/fluent-bit.yaml

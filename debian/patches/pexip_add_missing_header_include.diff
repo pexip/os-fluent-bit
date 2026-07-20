@@ -1,0 +1,16 @@
+Add missing include path to flb_http_client.c
+
+This currently depends on a transitive include which depends on which options
+you compile with.
+Index: fluent-bit/src/flb_http_client.c
+===================================================================
+--- fluent-bit.orig/src/flb_http_client.c
++++ fluent-bit/src/flb_http_client.c
+@@ -51,6 +51,7 @@
+ #include <fluent-bit/flb_http_client_debug.h>
+ #include <fluent-bit/flb_network.h>
+ #include <fluent-bit/flb_utils.h>
++#include <fluent-bit/flb_upstream_ha.h>
+ #include <fluent-bit/flb_base64.h>
+ #include <fluent-bit/tls/flb_tls.h>
+ #include <time.h>

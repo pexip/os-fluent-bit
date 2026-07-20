@@ -1,0 +1,133 @@
+Silence errors when trying to read thermal data which is not present.
+
+In VMs (where we run) there will generally not be any thermal data.
+Whilst the actual thermal calling code is careful to only log at debug
+to handle this, the actual uint64 reading routine reports an error
+rather than logging at debug.  To solve this without silencing other issues,
+introduce a _try version of the function which logs at debug instead of error.
+Index: fluent-bit/plugins/in_node_exporter_metrics/ne_utils.c
+===================================================================
+--- fluent-bit.orig/plugins/in_node_exporter_metrics/ne_utils.c
++++ fluent-bit/plugins/in_node_exporter_metrics/ne_utils.c
+@@ -65,10 +65,11 @@ int ne_utils_str_to_uint64(char *str, ui
+     return 0;
+ }
+ 
+-int ne_utils_file_read_uint64(struct flb_ne *ctx,
++static int ne_utils_file_read_uint64_internal(struct flb_ne *ctx,
+                               const char *mount,
+                               const char *path,
+                               const char *join_a, const char *join_b,
++                              bool log_error,
+                               uint64_t *out_val)
+ {
+     int fd;
+@@ -124,7 +125,11 @@ int ne_utils_file_read_uint64(struct flb
+     fd = open(p, O_RDONLY);
+     if (fd == -1) {
+         if (ctx) {
+-            flb_plg_error(ctx->ins, "could not open '%s'", p);
++            if (log_error) {
++                flb_plg_error(ctx->ins, "could not open '%s'", p);
++            } else {
++                flb_plg_debug(ctx->ins, "could not open '%s'", p);
++            }
+         }
+         else {
+             flb_errno();
+@@ -136,7 +141,11 @@ int ne_utils_file_read_uint64(struct flb
+     bytes = read(fd, &tmp, sizeof(tmp));
+     if (bytes == -1) {
+         if (ctx) {
+-            flb_plg_error(ctx->ins, "could not read from '%s'", p);
++            if (log_error) {
++                flb_plg_error(ctx->ins, "could not read from '%s'", p);
++            } else {
++                flb_plg_debug(ctx->ins, "could not read from '%s'", p);
++            }
+         }
+         else {
+             flb_errno();
+@@ -157,6 +166,24 @@ int ne_utils_file_read_uint64(struct flb
+     return 0;
+ }
+ 
++int ne_utils_file_read_uint64(struct flb_ne *ctx,
++                              const char *mount,
++                              const char *path,
++                              const char *join_a, const char *join_b,
++                              uint64_t *out_val)
++{
++    return ne_utils_file_read_uint64_internal(ctx, mount, path, join_a, join_b, true, out_val);
++}
++
++int ne_utils_file_read_uint64_try(struct flb_ne *ctx,
++                              const char *mount,
++                              const char *path,
++                              const char *join_a, const char *join_b,
++                              uint64_t *out_val)
++{
++    return ne_utils_file_read_uint64_internal(ctx, mount, path, join_a, join_b, false, out_val);
++}
++
+ /*
+  * Read a file and every non-empty line is stored as a flb_slist_entry in the
+  * given list.
+Index: fluent-bit/plugins/in_node_exporter_metrics/ne_utils.h
+===================================================================
+--- fluent-bit.orig/plugins/in_node_exporter_metrics/ne_utils.h
++++ fluent-bit/plugins/in_node_exporter_metrics/ne_utils.h
+@@ -34,6 +34,13 @@ int ne_utils_file_read_uint64(struct flb
+                               const char *join_a, const char *join_b,
+                               uint64_t *out_val);
+ 
++int ne_utils_file_read_uint64_try(struct flb_ne *ctx,
++                              const char *mount,
++                              const char *path,
++                              const char *join_a, const char *join_b,
++                              uint64_t *out_val);
++
++
+ int ne_utils_file_read_sds(struct flb_ne *ctx,
+                            const char *mount,
+                            const char *path,
+Index: fluent-bit/plugins/in_node_exporter_metrics/ne_cpu_linux.c
+===================================================================
+--- fluent-bit.orig/plugins/in_node_exporter_metrics/ne_cpu_linux.c
++++ fluent-bit/plugins/in_node_exporter_metrics/ne_cpu_linux.c
+@@ -112,7 +112,7 @@ static int cpu_thermal_update(struct flb
+         entry = mk_list_entry(head, struct flb_slist_entry, _head);
+ 
+         /* Core ID */
+-        ret = ne_utils_file_read_uint64(ctx, ctx->path_sysfs,
++        ret = ne_utils_file_read_uint64_try(ctx, ctx->path_sysfs,
+                                         entry->str,
+                                         "topology", "core_id",
+                                         &core_id);
+@@ -121,7 +121,7 @@ static int cpu_thermal_update(struct flb
+         }
+ 
+         /* Physical ID */
+-        ret = ne_utils_file_read_uint64(ctx, ctx->path_sysfs,
++        ret = ne_utils_file_read_uint64_try(ctx, ctx->path_sysfs,
+                                         entry->str,
+                                         "topology", "physical_package_id",
+                                         &physical_package_id);
+@@ -130,7 +130,7 @@ static int cpu_thermal_update(struct flb
+         }
+ 
+         /* Package Metric: node_cpu_core_throttles_total */
+-        ret = ne_utils_file_read_uint64(ctx, ctx->path_sysfs,
++        ret = ne_utils_file_read_uint64_try(ctx, ctx->path_sysfs,
+                                         entry->str,
+                                         "thermal_throttle", "core_throttle_count",
+                                         &core_throttle_count);
+@@ -150,7 +150,7 @@ static int cpu_thermal_update(struct flb
+         }
+ 
+         /* Package Metric: node_cpu_package_throttles_total */
+-        ret = ne_utils_file_read_uint64(ctx, ctx->path_sysfs,
++        ret = ne_utils_file_read_uint64_try(ctx, ctx->path_sysfs,
+                                         entry->str,
+                                         "thermal_throttle", "package_throttle_count",
+                                         &package_throttle_count);
