@@ -1,0 +1,90 @@
+Avoid use of deprecated openssl APIs
+Index: fluent-bit/src/flb_crypto.c
+===================================================================
+--- fluent-bit.orig/src/flb_crypto.c
++++ fluent-bit/src/flb_crypto.c
+@@ -162,9 +162,11 @@ static int flb_crypto_build_rsa_public_k
+ {
+     BIGNUM *n = NULL;
+     BIGNUM *e = NULL;
+-    BIGNUM *n_dup = NULL;
+-    BIGNUM *e_dup = NULL;
++#if OPENSSL_VERSION_MAJOR < 3
+     RSA *rsa = NULL;
++#else
++    EVP_PKEY_CTX *ctx = NULL;
++#endif
+     int ret = FLB_CRYPTO_BACKEND_ERROR;
+ 
+     if (!modulus_bytes || !exponent_bytes || !pkey) {
+@@ -202,57 +204,38 @@ static int flb_crypto_build_rsa_public_k
+     rsa = NULL; /* ownership transferred */
+ #else
+     /* OpenSSL 3.x: Build RSA key and wrap in EVP_PKEY */
+-    rsa = RSA_new();
+-    if (!rsa) {
++    ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
++    if (!ctx) {
+         goto cleanup;
+     }
+ 
+-    n_dup = BN_dup(n);
+-    if (!n_dup) {
+-        goto cleanup;
+-    }
+-
+-    e_dup = BN_dup(e);
+-    if (!e_dup) {
+-        BN_free(n_dup);
+-        n_dup = NULL;
+-        goto cleanup;
+-    }
++    OSSL_PARAM params[] = {
++        OSSL_PARAM_BN("n", n, BN_num_bytes(n)),
++        OSSL_PARAM_BN("e", e, BN_num_bytes(e)),
++    };
+ 
+-    if (RSA_set0_key(rsa, n_dup, e_dup, NULL) != 1) {
+-        BN_free(n_dup);
+-        BN_free(e_dup);
+-        n_dup = e_dup = NULL;
++    if (EVP_PKEY_fromdata_init(ctx) <= 0) {
+         goto cleanup;
+     }
+-    n_dup = e_dup = NULL; /* ownership transferred to RSA */
+ 
+-    *pkey = EVP_PKEY_new();
+-    if (!*pkey) {
++    if (EVP_PKEY_fromdata(ctx, pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0) {
+         goto cleanup;
+     }
+ 
+-    if (EVP_PKEY_set1_RSA(*pkey, rsa) != 1) {
+-        EVP_PKEY_free(*pkey);
+-        *pkey = NULL;
+-        goto cleanup;
+-    }
+-    RSA_free(rsa);
+-    rsa = NULL;
+ #endif
+ 
+     ret = FLB_CRYPTO_SUCCESS;
+ 
+ cleanup:
++#if OPENSSL_VERSION_MAJOR < 3
+     if (rsa) {
+         RSA_free(rsa);
+     }
+-    if (n_dup) {
+-        BN_free(n_dup);
+-    }
+-    if (e_dup) {
+-        BN_free(e_dup);
++#else
++    if (ctx) {
++        EVP_PKEY_CTX_free(ctx);
+     }
++#endif
+     if (n) {
+         BN_free(n);
+     }
