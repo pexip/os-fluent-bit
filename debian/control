@@ -1,7 +1,7 @@
 Source: fluent-bit
 Section: utils
 Priority: optional
-Maintainer: Mark Hymers <mark.hymers@pexip.com>
+Maintainer: Pexip AS <packaging@pexip.com>
 Rules-Requires-Root: no
 Build-Depends:
  debhelper-compat (= 13),
