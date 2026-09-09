@@ -1,3 +1,9 @@
+fluent-bit (5.0.9-1+pexip25u2) pexip-trixie; urgency=medium
+
+  * Fix ConditionPathExists in service file to refer to correct file.
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Wed, 09 Sep 2026 14:16:16 +0100
+
 fluent-bit (5.0.9-1+pexip25u1) pexip-trixie; urgency=medium
 
   * Re-release with pexip version number.
