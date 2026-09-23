@@ -154,8 +154,23 @@ struct flb_test_out_formatter {
      */
     void *rt_data;
 
-    /* optional context for flush callback */
+    /* optional context for "flush context callback" */
     void *flush_ctx;
+
+    /*
+     * Callback
+     * =========
+     * Optional "flush context callback": it references the function that extracts
+     * optional flush context for "formatter callback".
+     */
+    void *(*flush_ctx_callback) (/* Fluent Bit context */
+                                 struct flb_config *,
+                                 /* plugin that ingested the records */
+                                 struct flb_input_instance *,
+                                 /* plugin instance context */
+                                 void *plugin_context,
+                                 /* context for "flush context callback" */
+                                 void *flush_ctx);
 
     /*
      * Callback
@@ -380,6 +395,16 @@ struct flb_output_instance {
     int tls_win_use_enterprise_certstore;    /* Use enterprise CertStore */
     char *tls_win_thumbprints;               /* CertStore Thumbprints (Windows) */
 # endif
+
+    /*
+     * HTTPS proxy TLS settings: independent from the destination tls.*
+     * settings above, since the proxy leg and the destination leg are
+     * different TLS peers.
+     */
+    int tls_proxy_verify;                /* Verify proxy cert (default: true) */
+    int tls_proxy_verify_hostname;       /* Verify proxy hostname (default: true) */
+    char *tls_proxy_ca_path;             /* Path to CA certs for proxy verification */
+    char *tls_proxy_ca_file;             /* CA root cert for proxy verification */
 #endif
 
     /*
@@ -574,6 +599,47 @@ struct flb_output_flush {
 
     struct mk_list _head;              /* Link to flb_task->threads */
 };
+
+static FLB_INLINE void *flb_output_get_retry_context(
+                        struct flb_output_flush *out_flush,
+                        int *records,
+                        size_t *bytes)
+{
+    void *context;
+
+    flb_task_acquire_lock(out_flush->task);
+    context = flb_task_get_route_retry_context(out_flush->task,
+                                               out_flush->o_ins,
+                                               records, bytes);
+    flb_task_release_lock(out_flush->task);
+
+    return context;
+}
+
+static FLB_INLINE int flb_output_set_retry_context(
+                        struct flb_output_flush *out_flush,
+                        void *context,
+                        void (*destroy)(void *),
+                        int records,
+                        size_t bytes)
+{
+    int result;
+
+    flb_task_acquire_lock(out_flush->task);
+    result = flb_task_set_route_retry_context(out_flush->task,
+                                              out_flush->o_ins,
+                                              context, destroy,
+                                              records, bytes);
+    flb_task_release_lock(out_flush->task);
+
+    return result;
+}
+
+static FLB_INLINE int flb_output_clear_retry_context(
+                        struct flb_output_flush *out_flush)
+{
+    return flb_output_set_retry_context(out_flush, NULL, NULL, 0, 0);
+}
 
 static FLB_INLINE int flb_output_is_threaded(struct flb_output_instance *ins)
 {
@@ -1247,6 +1313,12 @@ static inline void flb_output_return(int ret, struct flb_coro *co) {
     bytes = counted_event_chunk->size;
 
     flb_task_acquire_lock(task);
+    if (ret != FLB_OK &&
+        flb_task_get_route_retry_context(task, o_ins,
+                                         &records, &bytes) == NULL) {
+        records = counted_event_chunk->total_events;
+        bytes = counted_event_chunk->size;
+    }
     flb_task_set_route_data(task, o_ins, records, bytes);
     flb_task_deactivate_route(task, o_ins);
     flb_task_release_lock(task);
@@ -1423,6 +1495,9 @@ int flb_output_oauth2_property_check(struct flb_output_instance *ins,
                                       struct flb_config *config);
 int flb_output_plugin_property_check(struct flb_output_instance *ins,
                                      struct flb_config *config);
+#ifdef FLB_HAVE_TLS
+int flb_output_proxy_tls_ca_check(struct flb_output_instance *ins);
+#endif
 int flb_output_init_all(struct flb_config *config);
 int flb_output_check(struct flb_config *config);
 int flb_output_log_check(struct flb_output_instance *ins, int l);
