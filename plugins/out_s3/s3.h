@@ -26,6 +26,12 @@
 #include <fluent-bit/flb_aws_credentials.h>
 #include <fluent-bit/flb_aws_util.h>
 #include <fluent-bit/flb_blob_db.h>
+#include <fluent-bit/flb_pthread.h>
+
+/* S3 output format types */
+#define FLB_S3_FORMAT_JSON_LINES  0
+#define FLB_S3_FORMAT_PARQUET     100
+#define FLB_S3_FORMAT_ARROW       101
 
 /* Upload data to S3 in 5MB chunks */
 #define MIN_CHUNKED_UPLOAD_SIZE 5242880
@@ -66,6 +72,7 @@
 
 struct upload_queue {
     struct s3_file *upload_file;
+    /* Non-owning reference; refresh it before every upload attempt. */
     struct multipart_upload *m_upload_file;
     flb_sds_t tag;
     int tag_len;
@@ -127,6 +134,7 @@ struct flb_s3 {
     int static_file_path;
     int retry_exhausted_action;
     int compression;
+    int s3_format;
     int port;
     int insecure;
     size_t store_dir_limit_size;
@@ -147,8 +155,8 @@ struct flb_s3 {
     struct flb_tls *authorization_endpoint_tls_context;
 
     /* track the total amount of buffered data */
-    size_t current_buffer_size;
-    size_t quarantine_buffer_size;
+    uint64_t current_buffer_size;
+    uint64_t quarantine_buffer_size;
 
     struct flb_aws_provider *provider;
     struct flb_aws_provider *base_provider;
@@ -172,6 +180,8 @@ struct flb_s3 {
     struct flb_fstore_stream *stream_upload;  /* multipart upload stream */
     struct flb_fstore_stream *stream_quarantine; /* retry-exhausted stream */
     struct flb_fstore_stream *stream_metadata; /* s3 metadata stream */
+    pthread_mutex_t files_mutex;
+    int files_mutex_initialized;
 
     /*
      * used to track that unset buffers were found on startup that have not
@@ -186,6 +196,7 @@ struct flb_s3 {
     int preserve_data_ordering;
     int upload_queue_success;
     struct mk_list upload_queue;
+    struct flb_sched_timer *upload_queue_retry_timer;
 
     size_t file_size;
     size_t upload_chunk_size;

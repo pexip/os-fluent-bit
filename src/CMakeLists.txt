@@ -38,6 +38,7 @@ set(src
   flb_output.c
   flb_output_thread.c
   flb_config.c
+  flb_fips.c
   flb_config_map.c
   flb_socket.c
   flb_network.c
@@ -46,12 +47,14 @@ set(src
   flb_engine.c
   flb_engine_dispatch.c
   flb_task.c
+  flb_search_bulk.c
   flb_unescape.c
   flb_scheduler.c
   flb_io.c
   flb_storage.c
   flb_connection.c
   flb_downstream.c
+  flb_downstream_worker.c
   flb_upstream.c
   flb_upstream_ha.c
   flb_upstream_node.c
@@ -67,6 +70,7 @@ set(src
   flb_crypto.c
   flb_random.c
   flb_plugin.c
+  flb_plugin_alias.c
   flb_gzip.c
   flb_snappy.c
   flb_zstd.c
@@ -523,7 +527,9 @@ set(flb_rc_files
 endif()
 
 # Shared Library
-if(FLB_SHARED_LIB)
+if(FLB_SHARED_LIB OR
+   (NOT MSVC AND NOT FLB_JEMALLOC AND
+    (FLB_TESTS_RUNTIME OR FLB_TESTS_INTERNAL OR FLB_TESTS_INTERNAL_FUZZ)))
   add_library(fluent-bit-shared SHARED ${src})
   add_sanitizers(fluent-bit-shared)
   set_target_properties(fluent-bit-shared
@@ -541,11 +547,13 @@ if(FLB_SHARED_LIB)
       PROPERTIES PDB_NAME fluent-bit.dll)
   endif()
 
-  # Library install routines
-  install(TARGETS fluent-bit-shared
-    LIBRARY DESTINATION ${FLB_INSTALL_LIBDIR}
-    COMPONENT library
-    RUNTIME DESTINATION ${FLB_INSTALL_BINDIR})
+  if(FLB_SHARED_LIB)
+    # Library install routines
+    install(TARGETS fluent-bit-shared
+      LIBRARY DESTINATION ${FLB_INSTALL_LIBDIR}
+      COMPONENT library
+      RUNTIME DESTINATION ${FLB_INSTALL_BINDIR})
+  endif()
 endif()
 
 # Static Library
