@@ -1,8 +1,6 @@
 Avoid use of deprecated openssl APIs
-Index: fluent-bit/src/flb_crypto.c
-===================================================================
---- fluent-bit.orig/src/flb_crypto.c
-+++ fluent-bit/src/flb_crypto.c
+--- a/src/flb_crypto.c
++++ b/src/flb_crypto.c
 @@ -21,6 +21,9 @@
  #include <openssl/rsa.h>
  #include <openssl/evp.h>
@@ -13,7 +11,7 @@ Index: fluent-bit/src/flb_crypto.c
  #include <string.h>
  
  /*
-@@ -162,9 +165,13 @@ static int flb_crypto_build_rsa_public_k
+@@ -162,9 +165,13 @@
  {
      BIGNUM *n = NULL;
      BIGNUM *e = NULL;
@@ -29,7 +27,7 @@ Index: fluent-bit/src/flb_crypto.c
      int ret = FLB_CRYPTO_BACKEND_ERROR;
  
      if (!modulus_bytes || !exponent_bytes || !pkey) {
-@@ -201,58 +208,56 @@ static int flb_crypto_build_rsa_public_k
+@@ -201,58 +208,56 @@
      }
      rsa = NULL; /* ownership transferred */
  #else
@@ -113,3 +111,13 @@ Index: fluent-bit/src/flb_crypto.c
      if (n) {
          BN_free(n);
      }
+--- a/lib/monkey/tls/tls_openssl.c
++++ b/lib/monkey/tls/tls_openssl.c
+@@ -383,7 +383,6 @@
+     SSL_library_init();
+ #else
+     OPENSSL_init_ssl(0, NULL);
+-    SSL_load_error_strings();
+ #endif
+ }
+ 
