@@ -69,6 +69,7 @@ override_dh_auto_configure:
       -DFLB_OUT_CLOUDWATCH_LOGS=OFF \
       -DFLB_OUT_DATADOG=OFF \
       -DFLB_OUT_ES=OFF \
+      -DFLB_OUT_GCS=OFF \
       -DFLB_OUT_GELF=OFF \
       -DFLB_OUT_INFLUXDB=OFF \
       -DFLB_OUT_KAFKA=OFF \
