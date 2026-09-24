@@ -7,3 +7,4 @@ WantedBy=multi-user.target
 
 [Path]
 PathChanged=/etc/fluent-bit/fluent-bit.yaml
+Unit=fluent-bit.service
